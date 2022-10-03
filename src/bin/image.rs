@@ -1,9 +1,92 @@
 use ncnn_rs::{MatPixelType, Net};
-use opencv::core::{Mat as CvMat, Rect, Size, Size_, CV_8UC3};
+use opencv::core::{Mat as CvMat, Rect, Size, CV_8UC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imread, IMREAD_COLOR};
 use opencv::imgproc::{resize, INTER_LINEAR};
-use opencv::prelude::{MatTrait, MatTraitConst, MatTraitConstManual};
+use opencv::prelude::{MatTraitConst, MatTraitConstManual};
+
+const CLASS_NAMES: &[&'static str] = &[
+    "person",
+    "bicycle",
+    "car",
+    "motorcycle",
+    "airplane",
+    "bus",
+    "train",
+    "truck",
+    "boat",
+    "traffic light",
+    "fire hydrant",
+    "stop sign",
+    "parking meter",
+    "bench",
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe",
+    "backpack",
+    "umbrella",
+    "handbag",
+    "tie",
+    "suitcase",
+    "frisbee",
+    "skis",
+    "snowboard",
+    "sports ball",
+    "kite",
+    "baseball bat",
+    "baseball glove",
+    "skateboard",
+    "surfboard",
+    "tennis racket",
+    "bottle",
+    "wine glass",
+    "cup",
+    "fork",
+    "knife",
+    "spoon",
+    "bowl",
+    "banana",
+    "apple",
+    "sandwich",
+    "orange",
+    "broccoli",
+    "carrot",
+    "hot dog",
+    "pizza",
+    "donut",
+    "cake",
+    "chair",
+    "couch",
+    "potted plant",
+    "bed",
+    "dining table",
+    "toilet",
+    "tv",
+    "laptop",
+    "mouse",
+    "remote",
+    "keyboard",
+    "cell phone",
+    "microwave",
+    "oven",
+    "toaster",
+    "sink",
+    "refrigerator",
+    "book",
+    "clock",
+    "vase",
+    "scissors",
+    "teddy bear",
+    "hair drier",
+    "toothbrush",
+];
 
 fn main() -> anyhow::Result<()> {
     let nanodet = Nanodet {
@@ -13,8 +96,9 @@ fn main() -> anyhow::Result<()> {
         strides: vec![8, 16, 32, 64],
     };
 
-    let img = imread("data/coco_test.jpg", IMREAD_COLOR)?;
-    let img = uniform_resize(&img, nanodet.input_size.0, nanodet.input_size.1);
+    let mut img = imread("data/coco_test.jpg", IMREAD_COLOR)?;
+    let (resized_img, effective_area) =
+        uniform_resize(&img, nanodet.input_size.0, nanodet.input_size.1);
     // imshow("image", &img).unwrap();
     // wait_key(5000).unwrap();
 
@@ -24,7 +108,7 @@ fn main() -> anyhow::Result<()> {
 
     let alloc = ncnn_rs::Allocator::new();
     let mut input = ncnn_rs::Mat::from_pixels(
-        img.data_bytes().unwrap(),
+        resized_img.data_bytes().unwrap(),
         MatPixelType::BGR,
         416,
         416,
@@ -40,16 +124,86 @@ fn main() -> anyhow::Result<()> {
     extractor.input("data", &input)?;
     extractor.extract("output", &mut output)?;
 
-    let center_priors = nanodet.generate_grid_center_priors();
-    let detections = nanodet.decode_infer(&output, &center_priors, 0.4);
+    let score_threshold = 0.4;
+    let nms_threshold = 0.5;
 
-    println!("{:?}", detections);
+    let center_priors = nanodet.generate_grid_center_priors();
+    let mut results = nanodet.decode_infer(&output, &center_priors, score_threshold);
+
+    // println!("{:#?}", results);
+
+    let mut detections = Vec::new();
+    for class in results.iter_mut() {
+        nms_filter(class, nms_threshold);
+        detections.append(class);
+    }
+
+    draw_detections(&mut img, effective_area, &detections);
+
+    imshow("image", &img).unwrap();
+    wait_key(0).unwrap();
+
+    // println!("{:#?}", detections);
 
     Ok(())
 }
 
+fn draw_detections(img: &mut CvMat, eff_roi: ROI, dets: &[Detection]) {
+    let width = img.cols();
+    let height = img.rows();
+
+    let mut rand = 0x98413548u32;
+
+    for det in dets {
+        let bbox = det.bbox;
+        let color = (
+            (rand % 255) as f64,
+            ((rand >> 8) % 255) as f64,
+            ((rand >> 16) % 255) as f64,
+        );
+
+        let p1 = opencv::core::Point::new(
+            (bbox.xmin.round() as i32 - eff_roi.x) * width / eff_roi.width,
+            (bbox.ymin.round() as i32 - eff_roi.y) * height / eff_roi.height,
+        );
+        let p2 = opencv::core::Point::new(
+            (bbox.xmax.round() as i32 - eff_roi.x) * width / eff_roi.width,
+            (bbox.ymax.round() as i32 - eff_roi.y) * height / eff_roi.height,
+        );
+        let rect = opencv::core::Rect::from_points(p1, p2);
+
+        opencv::imgproc::rectangle(img, rect, color.into(), 1, opencv::imgproc::LINE_8, 0).unwrap();
+
+        opencv::imgproc::put_text(
+            img,
+            &format!("{} {:.0}%", CLASS_NAMES[det.label], det.score * 100.0),
+            p1,
+            opencv::imgproc::FONT_HERSHEY_SIMPLEX,
+            0.4,
+            color.into(),
+            1,
+            opencv::imgproc::LINE_8,
+            false,
+        )
+        .unwrap();
+
+        // XOR shift PRNG
+        rand ^= rand << 13;
+        rand ^= rand >> 17;
+        rand ^= rand << 5;
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ROI {
+    width: i32,
+    height: i32,
+    x: i32,
+    y: i32,
+}
+
 /// Resizes image keeping the aspect ratio by padding
-fn uniform_resize(src: &CvMat, dst_width: i32, dst_height: i32) -> CvMat {
+fn uniform_resize(src: &CvMat, dst_width: i32, dst_height: i32) -> (CvMat, ROI) {
     let dst = CvMat::new_rows_cols_with_default(dst_height, dst_width, CV_8UC3, 0.into()).unwrap();
 
     let src_width = src.cols();
@@ -81,7 +235,15 @@ fn uniform_resize(src: &CvMat, dst_width: i32, dst_height: i32) -> CvMat {
     let mut dst_roi = CvMat::roi(&dst, Rect::new(w_pad, h_pad, tmp_width, tmp_height)).unwrap();
     tmp.copy_to(&mut dst_roi).unwrap();
 
-    dst
+    (
+        dst,
+        ROI {
+            width: tmp_width,
+            height: tmp_height,
+            x: w_pad,
+            y: h_pad,
+        },
+    )
 }
 
 struct CenterPrior {
@@ -100,7 +262,7 @@ fn div_ceil(lhs: i32, rhs: i32) -> i32 {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct BoundingBox {
     xmin: f32,
     ymin: f32,
@@ -108,7 +270,28 @@ struct BoundingBox {
     ymax: f32,
 }
 
-#[derive(Debug)]
+impl BoundingBox {
+    fn intersection(&self, other: &Self) -> Option<Self> {
+        let inter = Self {
+            xmin: self.xmin.max(other.xmin),
+            ymin: self.ymin.max(other.ymin),
+            xmax: self.xmax.min(other.xmax),
+            ymax: self.ymax.min(other.ymax),
+        };
+
+        if (inter.xmax - inter.xmin) <= 1.0 || (inter.ymax - inter.ymin) <= 1.0 {
+            None
+        } else {
+            Some(inter)
+        }
+    }
+
+    fn area(&self) -> f32 {
+        (self.xmax - self.xmin + 1.0).max(0.0) * (self.ymax - self.ymin + 1.0).max(0.0)
+    }
+}
+
+#[derive(Debug, Clone)]
 struct Detection {
     bbox: BoundingBox,
     score: f32,
@@ -116,7 +299,7 @@ struct Detection {
 }
 
 fn fast_exp(x: f32) -> f32 {
-    let i: u32 = (1 << 23) * (1.4426950409 * x + 126.93490512).to_bits();
+    let i: u32 = ((1 << 23) as f64 * (1.4426950409 * x as f64 + 126.93490512)) as u32;
     f32::from_bits(i)
 }
 
@@ -197,7 +380,7 @@ impl Nanodet {
                 .max_by(|x, y| x.1.total_cmp(y.1))
                 .unwrap();
 
-            if *score > threshold {
+            if *score >= threshold {
                 let bbox = self.dis_pred_to_bbox(&scores[self.num_class..], ct.x, ct.y, ct.stride);
                 results[label].push(Detection {
                     bbox,
@@ -233,5 +416,28 @@ fn ncnn_get_row(mat: &ncnn_rs::Mat, y: usize) -> &[f32] {
             ptr.offset(row_size as isize * y as isize) as *const f32,
             row_size,
         )
+    }
+}
+
+fn nms_filter(detections: &mut Vec<Detection>, threshold: f32) {
+    detections.sort_by(|a, b| a.score.total_cmp(&b.score));
+
+    let mut i = 0;
+    while let Some(a) = detections.get(i).cloned() {
+        let mut j = i + 1;
+        while let Some(b) = detections.get(j) {
+            if let Some(inter) = a.bbox.intersection(&b.bbox) {
+                let inter_area = inter.area();
+                let overlap = inter_area / (a.bbox.area() + b.bbox.area() - inter_area);
+                if overlap >= threshold {
+                    detections.remove(j);
+                    continue;
+                }
+            }
+
+            j += 1;
+        }
+
+        i += 1;
     }
 }
