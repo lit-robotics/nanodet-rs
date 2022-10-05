@@ -172,6 +172,7 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 [[package]]
 name = "ncnn-bind"
 version = "0.1.1"
+source = "git+https://github.com/chemicstry/rust-ncnn#7b9d3ce3d2869c260b5a82a6e739dea0b6937976"
 dependencies = [
  "bindgen",
  "cmake",
@@ -190,6 +191,7 @@ dependencies = [
 [[package]]
 name = "ncnn-rs"
 version = "0.1.1"
+source = "git+https://github.com/chemicstry/rust-ncnn#7b9d3ce3d2869c260b5a82a6e739dea0b6937976"
 dependencies = [
  "anyhow",
  "libc",
@@ -244,9 +246,9 @@ dependencies = [
 
 [[package]]
 name = "opencv-binding-generator"
-version = "0.47.0"
+version = "0.47.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66a2ad892d997bdae85d4c3c5ea498cbca1d4722f685845b3ef7d7c7a40c6541"
+checksum = "b1ff8e5f87c638009197e364ced74045f8f19f15bec2ac2e61399c27bc313cf5"
 dependencies = [
  "clang",
  "clang-sys",
