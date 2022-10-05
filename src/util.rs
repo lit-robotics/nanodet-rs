@@ -34,6 +34,8 @@ pub fn activation_softmax(src: &[f32]) -> Vec<f32> {
 }
 
 pub fn ncnn_get_f32_row(mat: &ncnn_rs::Mat, y: usize) -> &[f32] {
+    assert!(y < mat.h() as usize, "Row out of range");
+
     let row_size = mat.w() as usize * mat.elemsize() as usize;
     unsafe {
         let ptr = mat.data() as *const u8;
