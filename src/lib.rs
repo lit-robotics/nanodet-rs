@@ -1,6 +1,6 @@
 mod bbox;
 mod decoder;
-pub mod image_util;
+pub mod image_utils;
 mod util;
 
 pub use bbox::*;

@@ -4,9 +4,22 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+# opencv image utilities
+opencv = ["dep:opencv"]
+# rust image utilities
+image = ["dep:image", "dep:imageproc", "dep:rusttype"]
 
 [dependencies]
-ncnn-rs = { git = "https://github.com/chemicstry/rust-ncnn" }
-opencv = "0.68"
-anyhow = "1.0"
+ncnn-rs = { git = "https://github.com/lit-robotics/rust-ncnn" }
+
+# Used with feature "opencv"
+opencv = { version = "0.70", optional = true }
+
+# Used with feature "image"
+image = { version = "0.24", optional = true }
+imageproc = { version = "0.23", optional = true }
+rusttype = { version = "0.9", optional = true }
+
+[dev-dependencies]
+show-image = { version = "0.13.0", features = ["image"] }

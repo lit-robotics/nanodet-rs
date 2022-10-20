@@ -1,100 +1,23 @@
-use ncnn_nanodet_rs::image_util::{draw_detections, uniform_resize};
+use std::io::{BufRead, BufReader};
+use std::path::Path;
+
+use ncnn_nanodet_rs::image_utils::opencv::{draw_detections, uniform_resize};
 use ncnn_nanodet_rs::{nms_filter, NanodetDecoder};
 use ncnn_rs::{MatPixelType, Net};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imread, IMREAD_COLOR};
 use opencv::prelude::MatTraitConstManual;
 
-// Classnames for the pretrained COCO model in `data/`
-const CLASS_NAMES: &[&'static str] = &[
-    "person",
-    "bicycle",
-    "car",
-    "motorcycle",
-    "airplane",
-    "bus",
-    "train",
-    "truck",
-    "boat",
-    "traffic light",
-    "fire hydrant",
-    "stop sign",
-    "parking meter",
-    "bench",
-    "bird",
-    "cat",
-    "dog",
-    "horse",
-    "sheep",
-    "cow",
-    "elephant",
-    "bear",
-    "zebra",
-    "giraffe",
-    "backpack",
-    "umbrella",
-    "handbag",
-    "tie",
-    "suitcase",
-    "frisbee",
-    "skis",
-    "snowboard",
-    "sports ball",
-    "kite",
-    "baseball bat",
-    "baseball glove",
-    "skateboard",
-    "surfboard",
-    "tennis racket",
-    "bottle",
-    "wine glass",
-    "cup",
-    "fork",
-    "knife",
-    "spoon",
-    "bowl",
-    "banana",
-    "apple",
-    "sandwich",
-    "orange",
-    "broccoli",
-    "carrot",
-    "hot dog",
-    "pizza",
-    "donut",
-    "cake",
-    "chair",
-    "couch",
-    "potted plant",
-    "bed",
-    "dining table",
-    "toilet",
-    "tv",
-    "laptop",
-    "mouse",
-    "remote",
-    "keyboard",
-    "cell phone",
-    "microwave",
-    "oven",
-    "toaster",
-    "sink",
-    "refrigerator",
-    "book",
-    "clock",
-    "vase",
-    "scissors",
-    "teddy bear",
-    "hair drier",
-    "toothbrush",
-];
-
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     assert_eq!(args.len(), 2, "Usage: ./image test_image.jpg");
 
+    let labels = load_labels(Path::new("data/coco_labels.txt"))?;
+    let labels_str: Vec<_> = labels.iter().map(String::as_str).collect();
+    assert_eq!(labels.len(), 80);
+
     let input_size = (416, 416);
-    let decoder = NanodetDecoder::new(input_size, 7, vec![8, 16, 32, 64], CLASS_NAMES.len());
+    let decoder = NanodetDecoder::new(input_size, 7, vec![8, 16, 32, 64], labels.len());
 
     let mut img = imread(&args[1], IMREAD_COLOR)?;
 
@@ -136,10 +59,19 @@ fn main() -> anyhow::Result<()> {
         detections.append(class);
     }
 
-    draw_detections(&mut img, effective_area, &detections, CLASS_NAMES);
+    draw_detections(&mut img, effective_area, &detections, &labels_str);
 
     imshow("image", &img).unwrap();
     wait_key(0).unwrap();
 
     Ok(())
+}
+
+fn load_labels(path: &Path) -> std::io::Result<Vec<String>> {
+    let file = std::fs::File::open(path)?;
+    Ok(BufReader::new(file)
+        .lines()
+        .map(|l| l.unwrap())
+        .filter(|l| !l.is_empty())
+        .collect())
 }
