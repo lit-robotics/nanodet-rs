@@ -1,4 +1,4 @@
-use crate::{activation_softmax, div_ceil, ncnn_get_f32_row, BoundingBox};
+use crate::{activation_softmax, div_ceil, AsFeatureMatrix, BoundingBox};
 
 #[derive(Debug, Clone)]
 pub struct CenterPrior {
@@ -57,14 +57,14 @@ impl NanodetDecoder {
     }
 
     /// Decodes output matrix of nanodet, returning detections grouped by class
-    pub fn decode(&self, features: &ncnn_rs::Mat, threshold: f32) -> Vec<Vec<Detection>> {
+    pub fn decode(&self, features: impl AsFeatureMatrix, threshold: f32) -> Vec<Vec<Detection>> {
         let mut results = (0..self.num_classes)
             .into_iter()
             .map(|_| Vec::new())
             .collect::<Vec<_>>();
 
         for (idx, ct) in self.center_priors.iter().enumerate() {
-            let scores = ncnn_get_f32_row(features, idx);
+            let scores = features.row(idx);
 
             let (label, score) = scores
                 .iter()

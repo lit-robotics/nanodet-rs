@@ -1197,8 +1197,8 @@ dependencies = [
 
 [[package]]
 name = "ncnn-bind"
-version = "0.1.1"
-source = "git+https://github.com/lit-robotics/rust-ncnn#a5a4a05082184e75b7b2118cf441f7497240ac11"
+version = "0.1.2"
+source = "git+https://github.com/tpoisonooo/rust-ncnn#6ba8b3d10d1ef4987c2c70dec02006dbc8c60d3f"
 dependencies = [
  "bindgen",
  "cmake",
@@ -1219,8 +1219,8 @@ dependencies = [
 
 [[package]]
 name = "ncnn-rs"
-version = "0.1.1"
-source = "git+https://github.com/lit-robotics/rust-ncnn#a5a4a05082184e75b7b2118cf441f7497240ac11"
+version = "0.1.2"
+source = "git+https://github.com/tpoisonooo/rust-ncnn#6ba8b3d10d1ef4987c2c70dec02006dbc8c60d3f"
 dependencies = [
  "anyhow",
  "libc",

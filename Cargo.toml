@@ -5,13 +5,15 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [features]
+# ncnn tensor support
+ncnn = ["dep:ncnn-rs"]
 # opencv image utilities
 opencv = ["dep:opencv"]
 # rust image utilities
 image = ["dep:image", "dep:imageproc", "dep:rusttype"]
 
 [dependencies]
-ncnn-rs = { git = "https://github.com/lit-robotics/rust-ncnn" }
+ncnn-rs = { git = "https://github.com/tpoisonooo/rust-ncnn", optional = true }
 
 # Used with feature "opencv"
 opencv = { version = "0.70", optional = true }
