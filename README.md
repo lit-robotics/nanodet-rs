@@ -1,30 +1,35 @@
-# ncnn-nanodet-rs
+# nanodet-rs
 
-Rust crate for the [nanodet](https://github.com/RangiLyu/nanodet) object detection model, based on [ncnn](https://github.com/Tencent/ncnn) neural network framework.
+Rust implementation of the [nanodet](https://github.com/RangiLyu/nanodet) decoder.
+
+Supports multiple neural network backends via `AsFeatureMatrix` trait. Implementations are provided for the following backends:
+- [ncnn-rs](https://github.com/tpoisonooo/rust-ncnn)
 
 ## Usage
 
 Can be used as library by including in `Cargo.toml`:
 ```yaml
-ncnn-nanodet-rs = { git = "https://github.com/chemicstry/ncnn-nanodet-rs" }
+nanodet-rs = { git = "https://github.com/lit-robotics/nanodet-rs" }
 ```
 
-For rust-flavored usage see [examples/image.rs](examples/image.rs), or if you like opencv check [examples/opencv.rs](examples/opencv.rs)
+For rust-flavored usage see [examples/ncnn_image.rs](examples/ncnn_image.rs), or if you like opencv check [examples/ncnn_opencv.rs](examples/ncnn_opencv.rs)
 
 ## Cargo Features
 
-- `image` for [image](https://crates.io/crates/image) based utility functions.
-- `opencv` for [opencv](https://crates.io/crates/opencv) based utility functions.
-
+- `ncnn` - [ncnn-rs](https://github.com/tpoisonooo/rust-ncnn) support.
+- `image` - [image](https://crates.io/crates/image) based utility functions.
+- `opencv` - [opencv](https://crates.io/crates/opencv) based utility functions.
 
 ## Running examples
 
+Examples are based on `ncnn` backend, which supports the most platforms.
+
 Run pretrained COCO model on an image with rust image pipeline:
 ```bash
-cargo run --example image --release --features image -- data/coco_test.jpg
+cargo run --example ncnn_image --release --features ncnn,image -- data/coco_test.jpg
 ```
 
 Run pretrained COCO model on an image with opencv image pipeline:
 ```bash
-cargo run --example opencv --release --features opencv -- data/coco_test.jpg
+cargo run --example ncnn_opencv --release --features ncnn,opencv -- data/coco_test.jpg
 ```

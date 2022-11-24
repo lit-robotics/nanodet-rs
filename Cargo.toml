@@ -1,11 +1,11 @@
 [package]
-name = "ncnn-nanodet-rs"
+name = "nanodet-rs"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [features]
-# ncnn tensor support
+# ncnn support
 ncnn = ["dep:ncnn-rs"]
 # opencv image utilities
 opencv = ["dep:opencv"]
@@ -13,6 +13,7 @@ opencv = ["dep:opencv"]
 image = ["dep:image", "dep:imageproc", "dep:rusttype"]
 
 [dependencies]
+# Used with feature "ncnn"
 ncnn-rs = { git = "https://github.com/tpoisonooo/rust-ncnn", optional = true }
 
 # Used with feature "opencv"
