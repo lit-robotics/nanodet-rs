@@ -7,6 +7,8 @@ license = "MIT OR Apache-2.0"
 [features]
 # ncnn support
 ncnn = ["dep:ncnn-rs"]
+# openvino support
+openvino = ["dep:openvino"]
 # opencv image utilities
 opencv = ["dep:opencv"]
 # rust image utilities
@@ -15,6 +17,9 @@ image = ["dep:image", "dep:imageproc", "dep:rusttype"]
 [dependencies]
 # Used with feature "ncnn"
 ncnn-rs = { git = "https://github.com/tpoisonooo/rust-ncnn", optional = true }
+
+# Used with feature "openvino"
+openvino = { version = "0.4", optional = true }
 
 # Used with feature "opencv"
 opencv = { version = "0.70", optional = true }
@@ -26,3 +31,6 @@ rusttype = { version = "0.9", optional = true }
 
 [dev-dependencies]
 show-image = { version = "0.13.0", features = ["image"] }
+
+[patch.crates-io]
+openvino = { git = "https://github.com/chemicstry/openvino-rs" }

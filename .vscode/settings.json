@@ -2,6 +2,6 @@
     "editor.formatOnSave": true,
     "rust-analyzer.cargo.features": [
         "opencv",
-        "image"
+        "image",
     ]
 }

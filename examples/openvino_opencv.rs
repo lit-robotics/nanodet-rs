@@ -3,10 +3,11 @@ use std::path::Path;
 
 use nanodet_rs::image_utils::opencv::{draw_detections, uniform_resize};
 use nanodet_rs::{nms_filter, NanodetDecoder};
-use ncnn_rs::{MatPixelType, Net};
+use opencv::core::VecN;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imread, IMREAD_COLOR};
-use opencv::prelude::MatTraitConstManual;
+use opencv::prelude::MatTraitConst;
+use openvino::Core;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
@@ -24,33 +25,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Resize image to square without stretching (adds padding)
     let (resized_img, effective_area) = uniform_resize(&img, input_size.0, input_size.1);
 
-    let mut net = Net::new();
-    net.load_param("data/nanodet-plus-m_416.param")?;
-    net.load_model("data/nanodet-plus-m_416.bin")?;
+    let mut core = Core::new(None).unwrap();
+    let network = core
+        .read_network_from_file(
+            "data/nanodet-plus-m_416_openvino.xml",
+            "data/nanodet-plus-m_416_openvino.bin",
+        )
+        .unwrap();
 
-    let mut input = ncnn_rs::Mat::from_pixels(
-        resized_img.data_bytes().unwrap(),
-        MatPixelType::BGR,
-        input_size.0,
-        input_size.1,
-        None,
-    )?;
-    let mut output = ncnn_rs::Mat::new();
+    // Load the network.
+    let mut executable_network = core.load_network(&network, "CPU").unwrap();
+    let mut infer_request = executable_network.create_infer_request().unwrap();
 
-    let mean_vals = [183.53, 116.28, 123.675];
-    let norm_vals = [0.017429, 0.017507, 0.017125];
-    input.substract_mean_normalize(&mean_vals, &norm_vals);
+    // Get the input tensor
+    let mut input_blob = infer_request.get_blob("data").unwrap();
 
-    // Extractors are consumed and can only be used for single inference.
-    // Creating them is cheap, so this step can be performed in a loop for video processing.
-    let mut extractor = net.create_extractor();
-    extractor.input("data", &input)?;
-    extractor.extract("output", &mut output)?;
+    // Write u8 image into f32 input tensor
+    let input_data = unsafe { input_blob.buffer_mut_as_type::<f32>().unwrap() };
+    for c in 0..3 {
+        for h in 0..input_size.1 {
+            for w in 0..input_size.0 {
+                input_data[(c * input_size.1 * input_size.0 + h * input_size.0 + w) as usize] =
+                    f32::from(resized_img.at_2d::<VecN<u8, 3>>(h, w).unwrap()[c as usize]);
+            }
+        }
+    }
+
+    // Execute inference.
+    infer_request.infer().unwrap();
+    let results = infer_request.get_blob("output").unwrap();
 
     let score_threshold = 0.4;
     let nms_threshold = 0.5;
 
-    let mut results = decoder.decode(&output, score_threshold);
+    let mut results = decoder.decode(&results, score_threshold);
 
     // Perform NMS filtering
     let mut detections = Vec::new();
