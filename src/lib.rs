@@ -17,6 +17,12 @@ pub trait AsFeatureMatrix {
     fn row(&self, row: usize) -> &[f32];
 }
 
+impl AsFeatureMatrix for Box<dyn AsFeatureMatrix> {
+    fn row(&self, row: usize) -> &[f32] {
+        (**self).row(row)
+    }
+}
+
 #[cfg(feature = "ncnn")]
 impl AsFeatureMatrix for ncnn_rs::Mat {
     fn row(&self, row: usize) -> &[f32] {
