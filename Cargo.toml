@@ -22,7 +22,7 @@ ncnn-rs = { git = "https://github.com/tpoisonooo/rust-ncnn", optional = true }
 openvino = { git = "https://github.com/chemicstry/openvino-rs", optional = true }
 
 # Used with feature "opencv"
-opencv = { version = "0.70", optional = true }
+opencv = { version = "0.74", optional = true }
 
 # Used with feature "image"
 image = { version = "0.24", optional = true }
@@ -31,3 +31,15 @@ rusttype = { version = "0.9", optional = true }
 
 [dev-dependencies]
 show-image = { version = "0.13.0", features = ["image"] }
+
+[[example]]
+name = "ncnn_image"
+required-features = ["ncnn", "image"]
+
+[[example]]
+name = "ncnn_opencv"
+required-features = ["ncnn", "opencv"]
+
+[[example]]
+name = "openvino_opencv"
+required-features = ["openvino", "opencv"]
