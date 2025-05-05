@@ -1,13 +1,13 @@
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
+use ab_glyph::FontArc;
 use image::io::Reader;
 use image::Rgb;
 use imageproc::map::map_colors;
 use nanodet_rs::image_utils::image::{draw_detections, uniform_resize};
 use nanodet_rs::{nms_filter, NanodetDecoder};
 use ncnn_rs::{MatPixelType, Net};
-use rusttype::Font;
 use show_image::{create_window, event};
 
 #[show_image::main]
@@ -67,7 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let font = Vec::from(include_bytes!("../data/DejaVuSans.ttf") as &[u8]);
-    let font = Font::try_from_vec(font).unwrap();
+    let font = FontArc::try_from_vec(font).unwrap();
     draw_detections(&mut img, &font, effective_area, &detections, &labels_str);
 
     // Create a window with default options and display the image.

@@ -40,16 +40,18 @@ impl AsFeatureMatrix for ncnn_rs::Mat {
 }
 
 #[cfg(feature = "openvino")]
-impl AsFeatureMatrix for openvino::Blob {
+impl AsFeatureMatrix for openvino::Tensor {
     fn row(&self, row: usize) -> &[f32] {
-        let desc = self.tensor_desc().unwrap();
-        let dims = desc.dims();
-        assert_eq!(dims.len(), 3, "Wrong tensor rank");
-        let [c, h, w]: [_; 3] = dims.try_into().unwrap();
+        let shape = self.get_shape().unwrap();
+        let rank = shape.get_rank();
+        assert_eq!(rank, 3, "Wrong tensor rank");
+        let dims: [_; 3] = shape.get_dimensions().try_into().unwrap();
+        let [c, h, w] = dims.map(|s| s as usize);
+
         assert!(row < h, "Row out of range");
         assert_eq!(c, 1, "Wrong channel count");
 
-        let buffer = unsafe { self.buffer_as_type::<f32>().unwrap() };
+        let buffer = self.get_data::<f32>().unwrap();
         let offset = w * row;
         &buffer[offset..offset + w]
     }

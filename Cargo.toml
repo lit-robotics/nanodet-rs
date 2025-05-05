@@ -12,25 +12,25 @@ openvino = ["dep:openvino"]
 # opencv image utilities
 opencv = ["dep:opencv"]
 # rust image utilities
-image = ["dep:image", "dep:imageproc", "dep:rusttype"]
+image = ["dep:image", "dep:imageproc", "dep:ab_glyph"]
 
 [dependencies]
 # Used with feature "ncnn"
 ncnn-rs = { git = "https://github.com/tpoisonooo/rust-ncnn", optional = true }
 
 # Used with feature "openvino". Using a fork until #54, #55 and #56 are merged.
-openvino = { git = "https://github.com/chemicstry/openvino-rs", optional = true }
+openvino = { version = "0.8", optional = true }
 
 # Used with feature "opencv"
-opencv = { version = "0.74", optional = true }
+opencv = { version = "0.94", optional = true }
 
 # Used with feature "image"
-image = { version = "0.24", optional = true }
-imageproc = { version = "0.23", optional = true }
-rusttype = { version = "0.9", optional = true }
+image = { version = "0.25", optional = true }
+imageproc = { version = "0.25", optional = true }
+ab_glyph = { version = "0.2", optional = true }
 
 [dev-dependencies]
-show-image = { version = "0.13.0", features = ["image"] }
+show-image = { version = "0.14.0", features = ["image"] }
 
 [[example]]
 name = "ncnn_image"

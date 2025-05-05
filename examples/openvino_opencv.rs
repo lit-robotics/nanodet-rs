@@ -25,23 +25,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Resize image to square without stretching (adds padding)
     let (resized_img, effective_area) = uniform_resize(&img, input_size.0, input_size.1);
 
-    let mut core = Core::new(None).unwrap();
+    let mut core = Core::new().unwrap();
     let network = core
-        .read_network_from_file(
+        .read_model_from_file(
             "data/nanodet-plus-m_416_openvino.xml",
             "data/nanodet-plus-m_416_openvino.bin",
         )
         .unwrap();
 
     // Load the network.
-    let mut executable_network = core.load_network(&network, "CPU").unwrap();
+    let mut executable_network = core
+        .compile_model(&network, openvino::DeviceType::CPU)
+        .unwrap();
     let mut infer_request = executable_network.create_infer_request().unwrap();
 
     // Get the input tensor
-    let mut input_blob = infer_request.get_blob("data").unwrap();
+    let mut input_blob = infer_request.get_input_tensor().unwrap();
 
     // Write u8 image into f32 input tensor
-    let input_data = unsafe { input_blob.buffer_mut_as_type::<f32>().unwrap() };
+    let input_data = input_blob.get_data_mut::<f32>().unwrap();
     for c in 0..3 {
         for h in 0..input_size.1 {
             for w in 0..input_size.0 {
@@ -53,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Execute inference.
     infer_request.infer().unwrap();
-    let results = infer_request.get_blob("output").unwrap();
+    let results = infer_request.get_output_tensor().unwrap();
 
     let score_threshold = 0.4;
     let nms_threshold = 0.5;

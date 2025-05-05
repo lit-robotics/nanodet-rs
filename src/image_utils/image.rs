@@ -3,7 +3,7 @@ use imageproc::{
     drawing::{draw_hollow_rect_mut, draw_text_mut},
     rect::Rect,
 };
-use rusttype::{Font, Scale};
+use ab_glyph::{FontArc, PxScale};
 
 use crate::Detection;
 
@@ -51,7 +51,7 @@ pub fn uniform_resize(
 
 pub fn draw_detections(
     img: &mut DynamicImage,
-    font: &Font,
+    font: &FontArc,
     eff_roi: ResizeRoi,
     dets: &[Detection],
     labels: &[&str],
@@ -90,7 +90,7 @@ pub fn draw_detections(
             (bbox.ymin.round() as i32 - eff_roi.h_pad as i32) * height as i32
                 / eff_roi.height as i32
                 + 4,
-            Scale::uniform(16.0),
+            PxScale::from(16.0),
             font,
             &format!("{} {:.0}%", labels[det.label], det.score * 100.0),
         );

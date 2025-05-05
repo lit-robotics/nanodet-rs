@@ -12,7 +12,8 @@ use super::ResizeRoi;
 ///
 /// Returns resized image and [ResizeROI] of the original image, which can be used to reverse resize on inferrence data.
 pub fn uniform_resize(src: &Mat, dst_width: i32, dst_height: i32) -> (Mat, ResizeRoi) {
-    let dst = Mat::new_rows_cols_with_default(dst_height, dst_width, CV_8UC3, 0.into()).unwrap();
+    let mut dst =
+        Mat::new_rows_cols_with_default(dst_height, dst_width, CV_8UC3, 0.into()).unwrap();
 
     let src_width = src.cols();
     let src_height = src.rows();
@@ -40,7 +41,7 @@ pub fn uniform_resize(src: &Mat, dst_width: i32, dst_height: i32) -> (Mat, Resiz
 
     let w_pad = (dst_width - width) / 2;
     let h_pad = (dst_height - height) / 2;
-    let mut dst_roi = Mat::roi(&dst, Rect::new(w_pad, h_pad, width, height)).unwrap();
+    let mut dst_roi = Mat::roi_mut(&mut dst, Rect::new(w_pad, h_pad, width, height)).unwrap();
     tmp.copy_to(&mut dst_roi).unwrap();
 
     (
